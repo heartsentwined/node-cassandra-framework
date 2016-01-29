@@ -1,0 +1,22 @@
+{
+  "name": "cassandra-framework",
+  "version": "0.0.1",
+  "description": "A framework for working with Cassandra",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/heartsentwined/node-cassandra-framework.git"
+  },
+  "keywords": [
+    "cassandra"
+  ],
+  "author": "Andy Li <andy@coglab.biz>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/heartsentwined/node-cassandra-framework/issues"
+  },
+  "homepage": "https://github.com/heartsentwined/node-cassandra-framework#readme"
+}
