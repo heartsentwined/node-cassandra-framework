@@ -27,7 +27,7 @@ module.exports = function (utils) {
   }
 
   CounterType.prototype.getSaveClause = function() {
-    return '"' + this.options.field + '" = "' + this.options.field '" + ?'
+    return '"' + this.options.field + '" = "' + this.options.field + '" + ?'
   }
 
   CounterType.prototype.increment = function (step) {
