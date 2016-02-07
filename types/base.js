@@ -56,13 +56,76 @@ Base.prototype.getValue = function() {
 }
 
 /**
- * get the value suitable for storing in the store
+ * check if current property is equal to given property
  *
- * @method getStoredValue
+ * @method isEqual
+ * @param {*} comparator the property to compare against
+ * @return {bool} whether the properties are equal
+ */
+Base.prototype.isEqual = function (comparator) {
+  return this._value === comparator._value
+}
+
+/**
+ * get the clause for SET, placeholders '?' matching in @see getSetValue
+ *
+ * @method getSetClause
+ * @param {void}
+ * @return {String} the clause with '?' as placeholders
+ */
+Base.prototype.getSetClause = function() {
+  return '"' + this.options.field + '" = ?'
+}
+
+/**
+ * get the value(s) matching the placeholders given by @see getSetClause
+ *
+ * note a single member array will be treated as one value
+ * i.e. return [1] is treated as same as return 1
+ * to return a single array, wrap it within another array
+ * i.e. return [[1]]
+ *
+ * @method getSetValue
+ * @param {*} [comparator] a comparator property
+ * @return {*} value for store
+ */
+Base.prototype.getSetValue = function (comparator) {
+  return this._getStoredValue()
+}
+
+/**
+ * get the clause for WHERE, placeholders '?' matching in @see getWhereValue
+ *
+ * @method getWhereClause
+ * @param {void}
+ * @return {String} the clause with '?' as placeholders
+ */
+Base.prototype.getWhereClause = function() {
+  return '"' + this.options.field + '" = ?'
+}
+
+/**
+ * get the value(s) matching the placeholders given by @see getWhereClause
+ *
+ * note a single member array will be treated as one value
+ * i.e. return [1] is treated as same as return 1
+ * to return a single array, wrap it within another array
+ * i.e. return [[1]]
+ *
+ * @method getWhereValue
  * @param {void}
  * @return {*} value for store
  */
-Base.prototype.getStoredValue = function() {
+Base.prototype.getWhereValue = function() {
+  return this._getStoredValue()
+}
+
+/**
+ * @method _getStoredValue
+ * @see getSetValue
+ * @see getWhereValue
+ */
+Base.prototype._getStoredValue = function() {
   return this._value
 }
 

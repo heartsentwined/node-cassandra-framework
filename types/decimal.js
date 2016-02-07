@@ -16,7 +16,11 @@ module.exports = function (utils) {
   DecimalType.prototype = Object.create(Base.prototype)
   DecimalType.prototype.constructor = DecimalType
 
-  DecimalType.prototype.getStoredValue = function() {
+  DecimalType.prototype.isEqual = function (comparator) {
+    return this._value.eq(comparator._value)
+  }
+
+  DecimalType.prototype._getStoredValue = function() {
     return this._value.times(Big(10).pow(this.options.precision))
   }
 

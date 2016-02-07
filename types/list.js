@@ -9,7 +9,11 @@ module.exports = function (utils) {
    */
   function ListType (raw, options) {
     options.type[0] = utils.normalizeProperty(options.type[0])
-    if (options.fromStored) { options.type[0].fromStored = true }
+    if (options.fromStored) {
+      options.type[0].fromStored = true
+    } else {
+      delete options.type[0].fromStored
+    }
     Base.apply(this, [raw, options])
   }
 
@@ -26,10 +30,20 @@ module.exports = function (utils) {
     })
   }
 
-  ListType.prototype.getStoredValue = function() {
-    return _.map(this._value, function (value) {
-      return value.getStoredValue()
+  ListType.prototype.isEqual = function (comparator) {
+    if (this._value.length !== comparator._value.length) { return false }
+    var isEqual = true
+    _.each(this._value, function (value, key) {
+      if (!isEqual) { return }
+      isEqual = value.isEqual(comparator._value[key])
     })
+    return isEqual
+  }
+
+  ListType.prototype._getStoredValue = function() {
+    return [_.map(this._value, function (value) {
+      return value._getStoredValue()
+    })]
   }
 
   ListType.prototype._normalize = function (value) {

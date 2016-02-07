@@ -9,17 +9,18 @@ module.exports = function (utils) {
    */
   function CounterType() {
     Base.apply(this, arguments)
-    this._diff = 0
   }
 
   CounterType.prototype = Object.create(Base.prototype)
   CounterType.prototype.constructor = CounterType
 
-  /**
-   * override: returns the diff in counter values, as expected by save clause
-   */
-  CounterType.prototype.getStoredValue = function() {
-    return this._diff
+  CounterType.prototype.getSetClause = function() {
+    return '"' + this.options.field + '" = "' + this.options.field + '" + ?'
+  }
+
+  CounterType.prototype.getSetValue = function (comparator) {
+    if (comparator) { return this._value - comparator._value }
+    return this._value
   }
 
   CounterType.prototype.fromStoredValue = function (raw) {
@@ -28,22 +29,6 @@ module.exports = function (utils) {
 
   CounterType.prototype._normalize = function (value) {
     return parseInt(value)
-  }
-
-  CounterType.prototype.getSaveClause = function() {
-    return '"' + this.options.field + '" = "' + this.options.field + '" + ?'
-  }
-
-  CounterType.prototype.increment = function (step) {
-    if (!step) { step = 1 }
-    this._diff += step
-    this._value += step
-  }
-
-  CounterType.prototype.decrement = function (step) {
-    if (!step) { step = 1 }
-    this._diff -= step
-    this._value -= step
   }
 
   return CounterType

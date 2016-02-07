@@ -11,7 +11,11 @@ module.exports = function (utils) {
   function TupleType (raw, options) {
     _.each(options.members, function (details, key) {
       options.members[key] = utils.normalizeProperty(details)
-      if (options.fromStored) { options.members[key].fromStored = true }
+      if (options.fromStored) {
+        options.members[key].fromStored = true
+      } else {
+        delete options.members[key].fromStored
+      }
     })
     Base.apply(this, [raw, options])
   }
@@ -25,10 +29,20 @@ module.exports = function (utils) {
     })
   }
 
-  TupleType.prototype.getStoredValue = function() {
+  TupleType.prototype.isEqual = function (comparator) {
+    if (this._value.length !== comparator._value.length) { return false }
+    var isEqual = true
+    _.each(this._value, function (value, key) {
+      if (!isEqual) { return }
+      isEqual = value.isEqual(comparator._value[key])
+    })
+    return isEqual
+  }
+
+  TupleType.prototype._getStoredValue = function() {
     var Tuple = cassandra.types.Tuple
     var args = [null].concat(_.map(this._value, function (value) {
-      return value.getStoredValue()
+      return value._getStoredValue()
     }))
     var tuple = new (Function.prototype.bind.apply(Tuple, args))
     return tuple

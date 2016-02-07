@@ -1,14 +1,19 @@
 module.exports = function (client, utils) {
   var _ = require('lodash')
+  var async = require('async')
 
   function Model (table, schema) {
     schema = utils.normalizeSchema(schema)
 
     function Base (data) {
       var _this = this
+      this._ori = {}
       this._data = {}
       if (data) {
         this.import(data)
+        _.each(this._data, function (value, property) {
+          _this._ori[property] = value
+        })
       } else {
         // TODO - handle this counter special case properly
         // always initialize a counter to zero
@@ -43,45 +48,106 @@ module.exports = function (client, utils) {
       cb(errors.length ? errors : null)
     }
 
-    Base.prototype.getStoredValues = function() {
+    Base.prototype._diff = function() {
       var _this = this
-      return _.map(schema, function (details, property) {
-        return _this._data[property].getStoredValue()
+      var hasChanges = false
+      var hasKeyChanges = false
+
+      _.each(this._data, function (value, property) {
+        // key change implies [general] change; but not the other way round
+        if (hasKeyChanges) { return }
+        var changed
+        if (_this._ori[property]) {
+          changed = !value.isEqual(_this._ori[property])
+        } else {
+          changed = true
+        }
+        hasChanges = hasChanges || changed
+        if (schema[property].key) { hasKeyChanges = hasKeyChanges || changed }
       })
+
+      return { hasChanges: hasChanges, hasKeyChanges: hasKeyChanges }
     }
 
-    /*
-     * TODO
-     * current behavior: silently ignore changes to PK values
-     * should be: silently delete-and-recreate on change to PK values
-     */
+    Base.prototype.hasChanges = function() {
+      return this._diff().hasChanges
+    }
+
+    Base.prototype.hasKeyChanges = function() {
+      return this._diff().hasKeyChanges
+    }
+
+    Base.prototype.getSetClause = function (hasKeyChanges) {
+      var _this = this
+      var values = []
+      var sets = _.compact(_.map(schema, function (details, property) {
+        if (!details.key) {
+          if (hasKeyChanges) {
+            var value = _this._data[property].getSetValue()
+          } else {
+            var value = _this._data[property].getSetValue(_this._ori[property])
+          }
+          values = values.concat(_.isArray(value) ? value : [value])
+          return _this._data[property].getSetClause()
+        }
+      })).join(',')
+      return { clause: sets, values: values }
+    }
+
+    Base.prototype.getWhereClause = function (originalValues) {
+      var data = originalValues ? this._ori : this._data
+      var values = []
+      var wheres = _.compact(_.map(schema, function (details, property) {
+        if (details.key) {
+          var value = data[property].getWhereValue()
+          values = values.concat(_.isArray(value) ? value : [value])
+          return data[property].getWhereClause()
+        }
+      })).join(' AND ')
+      return { clause: wheres, values: values }
+    }
+
     Base.prototype.save = function (cb) {
       var _this = this
-      this.validate(function (err) {
-        if (err) { return cb(err) }
+      var hasChanges, hasKeyChanges
 
-        var values = []
-        var sets = _.compact(_.map(schema, function (details, property) {
-          if (details.key) {
-            return null
-          } else {
-            values.push(_this._data[property].getStoredValue())
-            return _this._data[property].getSaveClause()
-          }
-        })).join(',')
-        var wheres = _.compact(_.map(schema, function (details, property) {
-          if (details.key) {
-            values.push(_this._data[property].getStoredValue())
-            return '"' + details.field + '" = ?'
-          } else {
-            return null
-          }
-        })).join(' AND ')
+      async.waterfall([
 
-        client.execute(
-          'UPDATE "' + table + '" SET ' + sets + ' WHERE ' + wheres
-        , values, cb)
-      })
+        function (cb) { _this.validate(cb) },
+
+        function (cb) {
+          var _diff = _this._diff()
+          hasChanges = _diff.hasChanges
+          hasKeyChanges = _diff.hasKeyChanges
+
+          if (!hasChanges) { return cb(null) }
+
+          if (hasKeyChanges && _.size(_this._ori)) {
+            var wheres = _this.getWhereClause(true)
+            client.execute(
+              'DELETE FROM "' + table
+              + '" WHERE ' + wheres.clause
+            , wheres.values, function (err) { cb(err) })
+          } else {
+            cb(null)
+          }
+        },
+
+        function (cb) {
+          if (!hasChanges) { return cb(null) }
+
+          var sets = _this.getSetClause(hasKeyChanges)
+          var wheres = _this.getWhereClause()
+          var values = sets.values.concat(wheres.values)
+
+          client.execute(
+            'UPDATE "' + table
+            + '" SET ' + sets.clause
+            + ' WHERE ' + wheres.clause
+          , values, function (err) { cb(err) })
+        },
+
+      ], cb)
     }
 
     // aliases
