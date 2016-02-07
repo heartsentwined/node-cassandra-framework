@@ -5,8 +5,18 @@ module.exports = function (client, utils) {
     schema = utils.normalizeSchema(schema)
 
     function Base (data) {
+      var _this = this
       this._data = {}
-      if (data) { this.import(data) }
+      if (data) {
+        this.import(data)
+      } else {
+        // TODO - handle this counter special case properly
+        // always initialize a counter to zero
+        _.each(schema, function (details, property) {
+          if (details.type !== 'counter') { return }
+          _this._data[property] = new details.Type(0, details)
+        })
+      }
     }
 
     Base.prototype.import = function (data) {
