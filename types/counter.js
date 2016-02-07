@@ -22,6 +22,10 @@ module.exports = function (utils) {
     return this._diff
   }
 
+  CounterType.prototype.fromStoredValue = function (raw) {
+    return parseInt(raw)
+  }
+
   CounterType.prototype._normalize = function (value) {
     return parseInt(value)
   }
