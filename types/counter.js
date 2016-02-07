@@ -12,7 +12,7 @@ module.exports = function (utils) {
     this._diff = 0
   }
 
-  CounterType.prototype = Object.craete(Base.prototype)
+  CounterType.prototype = Object.create(Base.prototype)
   CounterType.prototype.constructor = CounterType
 
   /**
