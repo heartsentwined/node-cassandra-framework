@@ -40,33 +40,12 @@ module.exports = function (client, utils) {
       })
     }
 
-    Base.prototype.create = function (cb) {
-      var _this = this
-      this.validate(function (err) {
-        if (err) { return cb(err) }
-
-        var properties = _.map(schema, function (details, property) {
-          return '"' + details.field + '"'
-        }).join(',')
-        var placeholders = _.map(schema, function() {
-          return '?'
-        }).join(',')
-        var values = _this.getStoredValues()
-
-        client.execute(
-          'INSERT INTO "' + table + '" '
-          + '(' + properties + ') '
-          + 'VALUES (' + placeholders + ')'
-        , values, cb)
-      })
-    }
-
     /*
      * TODO
      * current behavior: silently ignore changes to PK values
      * should be: silently delete-and-recreate on change to PK values
      */
-    Base.prototype.update = function (cb) {
+    Base.prototype.save = function (cb) {
       var _this = this
       this.validate(function (err) {
         if (err) { return cb(err) }
@@ -77,7 +56,7 @@ module.exports = function (client, utils) {
             return null
           } else {
             values.push(_this._data[property].getStoredValue())
-            return '"' + details.field +'" = ?'
+            return this._data[property].getSaveClause()
           }
         })).join(',')
         var wheres = _.compact(_.map(schema, function (details, property) {
@@ -94,6 +73,10 @@ module.exports = function (client, utils) {
         , values, cb)
       })
     }
+
+    // aliases
+    Base.prototype.create = Base.prototype.save
+    Base.prototype.update = Base.prototype.save
 
     // setters
     _.each(schema, function (details, property) {

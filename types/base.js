@@ -9,6 +9,7 @@ var _ = require('lodash')
  * @abstract subclass this to make concrete types
  * @param {*} raw value
  * @param {Object} [options] options for this value
+ * @param {String} options.field field name in table, required if save needed
  * @param {bool} options.fromStored set to true if importing from stored value
  */
 function Base (raw, options) {
@@ -113,6 +114,17 @@ Base.prototype._normalize = function (value) {
  */
 Base.prototype.validate = function() {
   return []
+}
+
+/**
+ * return the clause used in SET
+ *
+ * @method getSaveClause
+ * @param {void}
+ * @return {String} the SET clause
+ */
+Base.prototype.getSaveClause = function() {
+  return '"' + this.options.field + '" = ?'
 }
 
 module.exports = Base
