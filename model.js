@@ -56,7 +56,7 @@ module.exports = function (client, utils) {
             return null
           } else {
             values.push(_this._data[property].getStoredValue())
-            return this._data[property].getSaveClause()
+            return _this._data[property].getSaveClause()
           }
         })).join(',')
         var wheres = _.compact(_.map(schema, function (details, property) {
