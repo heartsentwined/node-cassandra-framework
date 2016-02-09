@@ -2,10 +2,10 @@ module.exports = function (client, utils) {
   var _ = require('lodash')
   var async = require('async')
 
-  function Model (table, schema) {
+  function ModelBuilder (table, schema) {
     schema = utils.normalizeSchema(schema)
 
-    function Base (data) {
+    function Model (data) {
       var _this = this
       this._ori = {}
       this._data = {}
@@ -24,7 +24,7 @@ module.exports = function (client, utils) {
       }
     }
 
-    Base.prototype.import = function (data) {
+    Model.prototype.import = function (data) {
       var _this = this
       _.each(schema, function (details, property) {
         details.fromStored = true
@@ -33,7 +33,7 @@ module.exports = function (client, utils) {
       return this
     }
 
-    Base.prototype.validate = function (cb) {
+    Model.prototype.validate = function (cb) {
       var _this = this
       var errors = []
       _.each(schema, function (details, property) {
@@ -48,7 +48,7 @@ module.exports = function (client, utils) {
       cb(errors.length ? errors : null)
     }
 
-    Base.prototype._diff = function() {
+    Model.prototype._diff = function() {
       var _this = this
       var hasChanges = false
       var hasKeyChanges = false
@@ -69,15 +69,15 @@ module.exports = function (client, utils) {
       return { hasChanges: hasChanges, hasKeyChanges: hasKeyChanges }
     }
 
-    Base.prototype.hasChanges = function() {
+    Model.prototype.hasChanges = function() {
       return this._diff().hasChanges
     }
 
-    Base.prototype.hasKeyChanges = function() {
+    Model.prototype.hasKeyChanges = function() {
       return this._diff().hasKeyChanges
     }
 
-    Base.prototype.getSetClause = function (hasKeyChanges) {
+    Model.prototype.getSetClause = function (hasKeyChanges) {
       var _this = this
       var values = []
       var sets = _.compact(_.map(schema, function (details, property) {
@@ -94,7 +94,7 @@ module.exports = function (client, utils) {
       return { clause: sets, values: values }
     }
 
-    Base.prototype.getWhereClause = function (originalValues) {
+    Model.prototype.getWhereClause = function (originalValues) {
       var data = originalValues ? this._ori : this._data
       var values = []
       var wheres = _.compact(_.map(schema, function (details, property) {
@@ -107,7 +107,7 @@ module.exports = function (client, utils) {
       return { clause: wheres, values: values }
     }
 
-    Base.prototype.save = function (cb) {
+    Model.prototype.save = function (cb) {
       var _this = this
       var hasChanges, hasKeyChanges
 
@@ -151,12 +151,12 @@ module.exports = function (client, utils) {
     }
 
     // aliases
-    Base.prototype.create = Base.prototype.save
-    Base.prototype.update = Base.prototype.save
+    Model.prototype.create = Model.prototype.save
+    Model.prototype.update = Model.prototype.save
 
     // setters
     _.each(schema, function (details, property) {
-      Object.defineProperty(Base.prototype, property, {
+      Object.defineProperty(Model.prototype, property, {
         enumerable: true,
         configurable: true,
         get: function() { return this._data[property].getValue() },
@@ -170,8 +170,8 @@ module.exports = function (client, utils) {
       })
     })
 
-    return Base
+    return Model
   }
 
-  return Model
+  return ModelBuilder
 }
