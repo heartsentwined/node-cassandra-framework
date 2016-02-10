@@ -77,6 +77,10 @@ module.exports = function (client, utils) {
       return this._diff().hasKeyChanges
     }
 
+    Model.prototype.isCounter = function() {
+      return !!_.find(schema, { type: 'counter' })
+    }
+
     Model.prototype.getSetClause = function (hasKeyChanges) {
       var _this = this
       var values = []
@@ -134,6 +138,13 @@ module.exports = function (client, utils) {
       return queries
     }
 
+    /*
+     * does NOT fully support changing a counter's PK
+     * - cassandra will silent make the deleted counter unavailable
+     * - it works fine when SELECTing afterwards - deleted counter won't show
+     * - but if subsequently reuses the deleted counter, it will start off
+     *   from last deleted value, instead of from zero - silently
+     */
     Model.prototype.save = function (cb) {
       var _this = this
       this.validate(function (err) {
@@ -143,7 +154,7 @@ module.exports = function (client, utils) {
         if (!queries.length) { return cb(null) }
 
         debug(queries)
-        client.batch(queries, cb)
+        client.batch(queries, { counter: _this.isCounter() }, cb)
       })
     }
 

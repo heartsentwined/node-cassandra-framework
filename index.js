@@ -66,6 +66,12 @@ function ORM (options) {
 /**
  * save models (via cassandra's native batch)
  *
+ * does NOT fully support changing a counter's PK
+ * - cassandra will silent make the deleted counter unavailable
+ * - it works fine when SELECTing afterwards - deleted counter won't show
+ * - but if subsequently reuses the deleted counter, it will start off
+ *   from last deleted value, instead of from zero - silently
+ *
  * @method save
  * @param {...Model|Model[]} models the models to save
  * @param {Function} [cb] callback
@@ -91,13 +97,33 @@ ORM.prototype.save = function (/* ...models[, cb] */) {
     },
 
     function (cb) {
-      var queries = _.flatten(_.map(models, function (model) {
-        return model.getSaveQueries()
-      }))
-      if (!queries.length) { return cb(null) }
+      var queries = []
+      var counterQueries = []
 
-      debug(queries)
-      _this.client.batch(queries, cb)
+      _.each(models, function (model) {
+        if (model.isCounter()) {
+          counterQueries.push(model.getSaveQueries())
+        } else {
+          queries.push(model.getSaveQueries())
+        }
+      })
+
+      queries = _.flatten(queries)
+      counterQueries = _.flatten(counterQueries)
+
+      debug(queries.concat(counterQueries))
+
+      async.parallel([
+        function (cb) {
+          if (!queries.length) { return cb(null) }
+          _this.client.batch(queries, cb)
+        },
+
+        function (cb) {
+          if (!counterQueries.length) { return cb(null) }
+          _this.client.batch(counterQueries, { counter: true }, cb)
+        },
+      ], cb)
     }
   ], cb)
 }
