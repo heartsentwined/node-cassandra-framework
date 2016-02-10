@@ -44,7 +44,9 @@ _.each(typeFiles, function (typeFile) {
   if (name === 'base') { return }
   var type = require('./types/' + name)(utils)
   types[name] = type
-  types[_.upperFirst(_.camelCase(name))] = type // alias
+  var camelCase = _.camelCase(name)
+  var pascalCase = camelCase.substr(0, 1).toUpperCase() + camelCase.substr(1)
+  types[pascalCase] = type // alias
   if (type.isTypeApplicable) {
     dynamics[name] = type
   } else {
