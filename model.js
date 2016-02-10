@@ -1,6 +1,6 @@
 module.exports = function (client, utils) {
   var _ = require('lodash')
-  var async = require('async')
+  var debug = require('debug')('cassandra-framework')
 
   function ModelBuilder (table, schema) {
     schema = utils.normalizeSchema(schema)
@@ -107,47 +107,44 @@ module.exports = function (client, utils) {
       return { clause: wheres, values: values }
     }
 
+    Model.prototype.getSaveQueries = function() {
+      var _diff = this._diff()
+      if (!_diff.hasChanges) { return [] }
+
+      var queries = []
+
+      if (_diff.hasKeyChanges && _.size(this._ori)) {
+        var wheres = this.getWhereClause(true)
+        queries.push({
+          query: 'DELETE FROM "' + table + '"'
+                 + ' WHERE ' + wheres.clause,
+          params: wheres.values,
+        })
+      }
+
+      var sets = this.getSetClause(_diff.hasKeyChanges)
+      var wheres = this.getWhereClause()
+      queries.push({
+        query: 'UPDATE "' + table + '"'
+               + ' SET ' + sets.clause
+               + ' WHERE ' + wheres.clause,
+        params: sets.values.concat(wheres.values),
+      })
+
+      return queries
+    }
+
     Model.prototype.save = function (cb) {
       var _this = this
-      var hasChanges, hasKeyChanges
+      this.validate(function (err) {
+        if (err) { return cb(err) }
 
-      async.waterfall([
+        var queries = _this.getSaveQueries()
+        if (!queries.length) { return cb(null) }
 
-        function (cb) { _this.validate(cb) },
-
-        function (cb) {
-          var _diff = _this._diff()
-          hasChanges = _diff.hasChanges
-          hasKeyChanges = _diff.hasKeyChanges
-
-          if (!hasChanges) { return cb(null) }
-
-          if (hasKeyChanges && _.size(_this._ori)) {
-            var wheres = _this.getWhereClause(true)
-            client.execute(
-              'DELETE FROM "' + table
-              + '" WHERE ' + wheres.clause
-            , wheres.values, function (err) { cb(err) })
-          } else {
-            cb(null)
-          }
-        },
-
-        function (cb) {
-          if (!hasChanges) { return cb(null) }
-
-          var sets = _this.getSetClause(hasKeyChanges)
-          var wheres = _this.getWhereClause()
-          var values = sets.values.concat(wheres.values)
-
-          client.execute(
-            'UPDATE "' + table
-            + '" SET ' + sets.clause
-            + ' WHERE ' + wheres.clause
-          , values, function (err) { cb(err) })
-        },
-
-      ], cb)
+        debug(queries)
+        client.batch(queries, cb)
+      })
     }
 
     // aliases
