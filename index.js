@@ -80,15 +80,16 @@ function ORM (options) {
 ORM.prototype.save = function (/* ...models[, cb] */) {
   var _this = this
 
-  var models = arguments[0]
-  if (!_.isArray(models)) {
+  var models, cb
+  if (_.isArray(arguments[0])) {
+    models = arguments[0]
+    cb = arguments[1]
+  } else {
     models = Array.prototype.slice.call(arguments, 0, arguments.length)
-  }
-
-  var cb
-  if (_.isFunction(models[models.length-1])) {
-    cb = models[models.length-1]
-    models = models.slice(0, models.length-1)
+    if (_.isFunction(models[models.length-1])) {
+      cb = models[models.length-1]
+      models = models.slice(0, models.length-1)
+    }
   }
 
   async.waterfall([
