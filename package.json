@@ -1,6 +1,6 @@
 {
   "name": "cassandra-framework",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "A framework for working with Cassandra",
   "main": "index.js",
   "scripts": {
@@ -8,17 +8,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/heartsentwined/node-cassandra-framework.git"
+    "url": "git://github.com/yalesov/node-cassandra-framework.git"
   },
   "keywords": [
     "cassandra"
   ],
-  "author": "Andy Li <andy@coglab.biz>",
+  "author": "Yulij Andreevich Lesov <yalesov@gmail.com>",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/heartsentwined/node-cassandra-framework/issues"
+    "url": "https://github.com/yalesov/node-cassandra-framework/issues"
   },
-  "homepage": "https://github.com/heartsentwined/node-cassandra-framework#readme",
+  "homepage": "https://github.com/yalesov/node-cassandra-framework#readme",
   "dependencies": {
     "async": "^1.5.2",
     "big.js": "^3.1.3",
